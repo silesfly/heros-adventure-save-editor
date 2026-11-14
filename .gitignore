@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Backup and temporary files
+*.bak
+*.tmp
+*.tmp-*
+*.rollback-*
+.hase-lock-*
+*.rsp
+*.pending-*
+
+# Save files
+*.save
+*.es3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node
+node_modules/
+
+# Build outputs: keep dist HTML tracked
+dist/*.exe
+dist/*.pdb
+dist/*.zip
+release/
+work/

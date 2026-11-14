@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>대협입지전 (Hero's Adventure) 세이브 에디터 v1.0</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314161d'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' fill='%23d4af37'%3E%E4%BF%A0%3C/text%3E%3C/svg%3E">
+  <style>
+    /* ===== 1. 디자인 토큰 ===== */
+    :root {
+      color-scheme: dark;
+      --bg-base: #0d0f14;
+      --bg-surface: #151922;
+      --bg-elevated: #1c2230;
+      --bg-header: #1a2030;
+      --border: #2b3347;
+      --border-strong: #3b445e;
+      --text: #e6e9f0;
+      --text-dim: #9aa4bb;
+      --text-muted: #6c7791;
+      --accent: #d4af37;
+      --accent-bright: #f0c75e;
+      --accent-dim: rgba(212, 175, 55, 0.16);
+      --jade: #2dd4bf;
+      --jade-dim: rgba(45, 212, 191, 0.14);
+      --danger: #e05a5a;
+      --danger-dim: rgba(224, 90, 90, 0.16);
+      --warn: #e8a33d;
+      --ok: #5ecf8f;
+      --radius: 8px;
+      --radius-sm: 6px;
+      --shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+      --font-ui: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      --font-serif: "Iowan Old Style", "Nanum Myeongjo", "Batang", serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Consolas", "D2Coding", monospace;
+      accent-color: var(--accent);
+      scrollbar-color: #3b445e #12151e;
+    }
+
+    /* ===== 2. 기본 리셋 ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      margin: 0;
+      min-block-size: 100vh;
+      font-family: var(--font-ui);
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text);
+      background-color: var(--bg-base);
+      background-image:
+        radial-gradient(1200px 620px at 12% -12%, rgba(212, 175, 55, 0.07), transparent 62%),
+        radial-gradient(900px 520px at 92% -4%, rgba(45, 212, 191, 0.05), transparent 58%);
+      background-repeat: no-repeat;
+    }
+
+    h1, h2, h3, h4 { margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+    p { margin: 0.35rem 0; }
+    a { color: var(--jade); }
+    ::selection { background: var(--accent-dim); color: var(--accent-bright); }
+    :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+
+    .sr-only {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* hidden="until-found" 의 페이지 내 검색 기능을 보존 */
+    [hidden]:not([hidden="until-found"]) { display: none !important; }
+
+    /* ===== 3. 스크롤바 폴백 (scrollbar-color 미지원 브라우저) ===== */
+    @supports not (scrollbar-color: auto) {
+      ::-webkit-scrollbar { inline-size: 12px; block-size: 12px; }
+      ::-webkit-scrollbar-track { background: #12151e; border-radius: 8px; }
+      ::-webkit-scrollbar-thumb {
+        background: #3b445e;
+        border: 2px solid #12151e;
+        border-radius: 8px;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: #4b5674; }
+      ::-webkit-scrollbar-corner { background: #12151e; }
+    }
+
+    /* ===== 4. 접근성 탭 인터페이스 ===== */
+    .tablist,
+    [role="tablist"] {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      white-space: nowrap;
+      gap: 0.25rem;
+      border-block-end: 1px solid var(--border);
+      padding-block-start: 0.25rem;
+      padding-inline: 0.25rem;
+      scrollbar-width: thin;
+    }
+
+    [role="tab"] {
+      position: relative;
+      flex: 0 0 auto;
+      cursor: pointer;
+      appearance: none;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 650;
+      color: var(--text-dim);
+      background: transparent;
+      border: 1px solid transparent;
+      border-block-end: 0;
+      border-start-start-radius: var(--radius-sm);
+      border-start-end-radius: var(--radius-sm);
+      padding: 0.48rem 0.9rem;
+      white-space: nowrap;
+    }
+    [role="tab"]:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+    [role="tab"][aria-selected="true"] {
+      color: var(--accent-bright);
+      background: var(--accent-dim);
+      border-color: var(--border);
+    }
+    [role="tab"][aria-selected="true"]::after {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      inset-block-end: 0;
+      border-block-end: 3px solid var(--accent-bright);
+    }
+    [role="tab"]:focus-visible {
+      outline: 2px solid var(--accent-bright);
+      outline-offset: -2px;
+    }
+
+    /* 탭패널 자체는 여백 0 — 빈 띠 렌더링 방지 */
+    [role="tabpanel"] {
+      padding: 0;
+      margin: 0;
+      border: 0;
+      background: transparent;
+    }
+    [role="tabpanel"][hidden]:not([hidden="until-found"]) { display: none; }
+
+    .panel-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-block-start: 0.85rem;
+      padding: 1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    /* ===== 5. 반응형 데이터 테이블 ===== */
+    .table-wrapper {
+      overflow: auto;
+      max-block-size: 520px;
+      container-type: inline-size;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-elevated);
+    }
+    .table-wrapper table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.9rem;
+    }
+    .table-wrapper thead {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 2;
+      background: #1a2030;
+    }
+    .table-wrapper th {
+      text-align: start;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-dim);
+      background: #1a2030;
+      padding: 0.55rem 0.7rem;
+      border-block-end: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .table-wrapper td {
+      padding: 0.45rem 0.7rem;
+      border-block-end: 1px solid rgba(43, 51, 71, 0.65);
+      vertical-align: middle;
+    }
+    .table-wrapper tbody tr:hover td { background: rgba(212, 175, 55, 0.05); }
+    .table-wrapper td .badge { vertical-align: middle; }
+    .table-wrapper td .input-num { text-align: end; }
+
+    /* ===== 6. 레이아웃 컴포넌트 ===== */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-inline-size: 1280px;
+      margin-inline: auto;
+      padding: 1rem clamp(0.75rem, 2vw, 1.75rem) 3rem;
+    }
+
+    .app-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.9rem 1.1rem;
+      background: linear-gradient(180deg, #1c2230, #151922);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .app-header h1 { font-size: 1.12rem; color: var(--accent-bright); }
+    .app-header .subtitle { font-size: 0.8rem; color: var(--text-muted); }
+    .app-header .spacer { flex: 1 1 auto; }
+
+    .safety-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      padding: 0.7rem 0.9rem;
+      font-size: 0.84rem;
+      color: #f3dc9b;
+      background: linear-gradient(90deg, rgba(212, 175, 55, 0.15), rgba(212, 175, 55, 0.04));
+      border: 1px solid rgba(212, 175, 55, 0.38);
+      border-inline-start: 4px solid var(--accent);
+      border-radius: var(--radius-sm);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+      padding-inline-end: 0.6rem;
+      border-inline-end: 1px solid var(--border);
+    }
+    .toolbar-group:last-child { border-inline-end: 0; padding-inline-end: 0; }
+    .toolbar .spacer { flex: 1 1 auto; }
+
+    .status-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.79rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-dim);
+      background: #12151e;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.08rem 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1.55;
+      white-space: nowrap;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+    }
+    .badge-dirty { color: var(--accent-bright); background: var(--accent-dim); border-color: rgba(212, 175, 55, 0.5); }
+    .badge-rarity { color: var(--jade); background: var(--jade-dim); border-color: rgba(45, 212, 191, 0.45); }
+
+    .split-2col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: start;
+    }
+    .char-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.6rem 0.85rem;
+      background: var(--bg-header);
+      border-block-end: 1px solid var(--border);
+    }
+    .card-header h2, .card-header h3 { font-size: 0.93rem; color: var(--accent-bright); }
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      padding: 0.85rem;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.6rem;
+    }
+    .preset-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0.6rem 0.7rem;
+      font: inherit;
+      text-align: start;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .preset-card:hover { border-color: var(--accent); background: rgba(212, 175, 55, 0.07); }
+    .preset-card[aria-pressed="true"] { border-color: var(--accent-bright); background: var(--accent-dim); }
+    .preset-card .preset-name { font-size: 0.86rem; font-weight: 650; }
+    .preset-card .preset-desc { font-size: 0.74rem; color: var(--text-muted); }
+
+    .currency-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 0.6rem;
+    }
+    .currency-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding: 0.6rem 0.75rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-inline-start: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+    }
+    .currency-card label { font-size: 0.78rem; font-weight: 600; color: var(--text-dim); }
+
+    .fief-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 0.6rem;
+    }
+    .fief-grid > * {
+      padding: 0.55rem 0.7rem;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .prop-group-bar {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 3;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.55rem;
+      background: #12151e;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .search-bar {
+      display: flex;
+      flex-wrap: wrap;
+      flex: 1 1 260px;
+      align-items: center;
+      gap: 0.45rem;
+      min-inline-size: 0;
+    }
+    .search-bar input[type="search"] { flex: 1 1 140px; min-inline-size: 0; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 0.65rem;
+      align-items: end;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .form-field label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+    .char-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      max-block-size: 540px;
+      overflow: auto;
+    }
+    .char-item-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      inline-size: 100%;
+      padding: 0.5rem 0.65rem;
+      font: inherit;
+      font-size: 0.85rem;
+      text-align: start;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .char-item-btn:hover { border-color: var(--accent); }
+    .char-item-btn[aria-current="true"] {
+      color: var(--accent-bright);
+      background: var(--accent-dim);
+      border-color: var(--accent-bright);
+    }
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .helper-text {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+    .row-actions {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* ===== 7. 버튼 / 입력 ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.42rem 0.8rem;
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 650;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      color: var(--text);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+    }
+    .btn:hover { background: #232b3c; border-color: #4a5570; }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn-primary { color: #08131a; background: linear-gradient(180deg, #4ce0cc, #1ea99a); border-color: #17a294; }
+    .btn-primary:hover { background: linear-gradient(180deg, #63ead8, #22b8a8); border-color: var(--jade); }
+    .btn-gold { color: #241c00; background: linear-gradient(180deg, var(--accent-bright), var(--accent)); border-color: #b8962e; }
+    .btn-gold:hover { background: linear-gradient(180deg, #f8dc84, #dfba44); }
+    .btn-danger { color: #fff0f0; background: linear-gradient(180deg, #e06565, #c33f3f); border-color: #a83535; }
+    .btn-danger:hover { background: linear-gradient(180deg, #ef7a7a, #d04a4a); }
+    .btn-sm { padding: 0.22rem 0.5rem; font-size: 0.75rem; border-radius: 5px; }
+
+    input, select, textarea {
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--text);
+      background: #10131b;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 0.35rem 0.5rem;
+    }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+      border-color: var(--accent);
+    }
+    .input-sm { padding: 0.22rem 0.45rem; font-size: 0.8rem; }
+    .input-num {
+      inline-size: 7.5rem;
+      text-align: end;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== 8. 부가 컴포넌트 ===== */
+    .changelog-list {
+      max-block-size: 220px;
+      margin: 0;
+      padding-inline-start: 1.1rem;
+      overflow: auto;
+      font-size: 0.81rem;
+      color: var(--text-dim);
+    }
+    .changelog-list li { margin-block-end: 0.25rem; }
+    .changelog-list li::marker { color: var(--accent); }
+
+    .raw-viewer-textarea {
+      inline-size: 100%;
+      min-block-size: 260px;
+      padding: 0.6rem;
+      resize: vertical;
+      overflow: auto;
+      white-space: pre;
+      tab-size: 2;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: #c8d2e6;
+      background: #0b0e14;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .drop-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent-bright);
+      background: rgba(8, 10, 15, 0.82);
+      border: 3px dashed var(--accent);
+      border-radius: 14px;
+      pointer-events: none;
+    }
+    body.dragging .drop-overlay { display: flex; }
+    body.dragging { cursor: copy; }
+
+    /* ===== 9. 반응형 ===== */
+    @media (max-width: 960px) {
+      .split-2col,
+      .char-layout { grid-template-columns: minmax(0, 1fr); }
+      .app-shell { padding-inline: 0.75rem; }
+      .table-wrapper { max-block-size: 420px; }
+      .toolbar-group { border-inline-end: 0; padding-inline-end: 0; }
+      .input-num { inline-size: 6rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="drop-overlay" class="drop-overlay" aria-hidden="true">여기에 .save 세이브 파일이나 슬롯 파일들을 놓아 열기</div>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>대협입지전 (Hero's Adventure) 세이브 에디터 v1.0</h1>
+        <p class="helper-text">100% 오프라인 단독 실행 · ES3 세이브 직접 편집 · 원본 자동 백업</p>
+      </div>
+      <div class="toolbar-group">
+        <span id="connection-badge" class="badge">오프라인 브라우저 모드</span>
+        <span id="dirty-badge" class="badge badge-dirty">수정 0파일 · 변경 0건</span>
+      </div>
+    </header>
+
+    <div class="safety-banner" role="note">
+      <strong>안전 안내</strong> — 편집 전 반드시 게임을 종료하세요 · 원본 .save 백업 권장
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <button type="button" id="btn-connect-dir" class="btn" hidden>폴더 직접 연결(자동 .bak 백업)</button>
+        <label for="folder-input" class="sr-only">슬롯 폴더 열기</label>
+        <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
+        <button type="button" id="btn-open-folder" class="btn">슬롯 폴더 열기</button>
+        <label for="file-input" class="sr-only">개별 세이브 파일 열기</label>
+        <input type="file" id="file-input" multiple accept=".save,.es3,.json" hidden>
+        <button type="button" id="btn-open-files" class="btn">개별 .save 파일 열기</button>
+        <button type="button" id="btn-load-demo" class="btn btn-gold">데모 세이브 체험</button>
+      </div>
+
+      <div id="native-toolbar" class="toolbar-group" hidden>
+        <button type="button" id="btn-native-open-slot" class="btn">네이티브 슬롯 열기</button>
+        <button type="button" id="btn-native-open-files" class="btn">네이티브 파일 열기</button>
+        <button type="button" id="btn-native-save" class="btn btn-primary">자동 백업 저장</button>
+      </div>
+
+      <div class="toolbar-group">
+        <label for="password-input">ES3 암호</label>
+        <input type="password" id="password-input" class="input-sm" value="Meow" size="8" autocorrect="off" autocapitalize="none" spellcheck="false" autocomplete="off">
+        <button type="button" id="btn-toggle-password" class="btn btn-sm" aria-pressed="false" aria-controls="password-input">표시</button>
+      </div>
+
+      <div class="toolbar-group">
+        <label for="chk-update-timestamp"><input type="checkbox" id="chk-update-timestamp" checked> 시각 갱신</label>
+        <button type="button" id="btn-export-modified" class="btn btn-primary">수정된 파일 내보내기</button>
+        <button type="button" id="btn-export-all" class="btn">전체 슬롯 내보내기</button>
+        <button type="button" id="btn-reset-all" class="btn btn-danger">변경사항 초기화</button>
+      </div>
+    </div>
+
+    <div role="status" aria-live="polite" id="status-bar" class="status-bar">준비 완료 — .save 파일을 열거나 데모 세이브를 체험하세요.</div>
+
+    <div class="tablist" role="tablist" aria-label="대협입지전 세이브 편집 메뉴" id="main-tablist">
+      <button type="button" role="tab" id="tab-summary" aria-selected="true" aria-controls="panel-summary" tabindex="0">요약 &amp; 원클릭 프리셋</button>
+      <button type="button" role="tab" id="tab-currency" aria-selected="false" aria-controls="panel-currency" tabindex="-1">화폐 &amp; 파티 상태</button>
+      <button type="button" role="tab" id="tab-inventory" aria-selected="false" aria-controls="panel-inventory" tabindex="-1">인벤토리 &amp; 아이템 도감 (2,617종)</button>
+      <button type="button" role="tab" id="tab-characters" aria-selected="false" aria-controls="panel-characters" tabindex="-1">주인공 &amp; 동료 편집</button>
+      <button type="button" role="tab" id="tab-world" aria-selected="false" aria-controls="panel-world" tabindex="-1">문파 · 가원 · 통천탑 · 시간</button>
+      <button type="button" role="tab" id="tab-reference" aria-selected="false" aria-controls="panel-reference" tabindex="-1">REA 수식 · 90혈도 &amp; Raw 뷰어</button>
+    </div>
+
+    <section role="tabpanel" id="panel-summary" aria-labelledby="tab-summary">
+      <div class="panel-inner">
+        <div class="split-2col">
+          <div class="card">
+            <div class="card-header"><h2>주인공 요약</h2></div>
+            <div class="card-body" id="summary-protagonist"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>실시간 변경 이력</h2></div>
+            <div class="card-body">
+              <ol id="changelog-list" class="changelog-list"></ol>
+              <p class="helper-text">모든 편집은 즉시 이력에 기록되며, 초기화 버튼으로 한 번에 되돌릴 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>원클릭 프리셋 (6종)</h2></div>
+          <div class="card-body">
+            <div id="preset-cards-grid" class="preset-grid"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>로드된 파일 목록</h2></div>
+          <div class="card-body">
+            <div tabindex="0" role="region" aria-label="로드된 세이브 파일 목록" class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>파일명</th><th>역할</th><th>암호화 모드</th><th>수정 여부</th><th>작업</th></tr>
+                </thead>
+                <tbody id="loaded-files-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-currency" aria-labelledby="tab-currency" hidden="until-found">
+      <div class="panel-inner">
+        <div class="card">
+          <div class="card-header"><h2>화폐 편집 (10종)</h2></div>
+          <div class="card-body">
+            <div id="currency-grid" class="currency-grid"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2>파티 상태</h2></div>
+          <div class="card-body">
+            <div id="team-props-grid" class="currency-grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-inventory" aria-labelledby="tab-inventory" hidden="until-found">
+      <div class="panel-inner">
+        <div class="split-2col">
+          <div class="card">
+            <div class="card-header"><h2>보유 인벤토리</h2></div>
+            <div class="card-body">
+              <search class="search-bar" aria-label="보유 인벤토리 검색">
+                <label for="inv-search-input" class="sr-only">보유 아이템 이름 검색</label>
+                <input type="search" id="inv-search-input" class="input-sm" placeholder="아이템명 검색" autocorrect="off" autocapitalize="none" spellcheck="false">
+                <label for="inv-cat-select" class="sr-only">보유 인벤토리 분류 필터</label>
+                <select id="inv-cat-select" class="input-sm">
+                  <option value="all">전체 분류</option>
+                  <option value="consumable">소모품</option>
+                  <option value="equipment">장비</option>
+                  <option value="material">재료</option>
+                  <option value="quest">퀘스트</option>
+                </select>
+                <span id="inv-count-badge" class="badge">0건</span>
+              </search>
+              <div tabindex="0" role="region" aria-label="보유 인벤토리 목록" class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr><th>아이템명</th><th>등급/분류</th><th>수량 (m_stack)</th><th>단조 (forgeLevel)</th><th>작업</th></tr>
+                  </thead>
+                  <tbody id="inv-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h2>아이템 도감 (2,617종)</h2></div>
+            <div class="card-body">
+              <search class="search-bar" aria-label="아이템 도감 검색">
+                <label for="cat-item-search" class="sr-only">도감 아이템 이름 검색</label>
+                <input type="search" id="cat-item-search" class="input-sm" placeholder="2,617종 아이템 검색" autocorrect="off" autocapitalize="none" spellcheck="false">
+                <label for="cat-item-category" class="sr-only">도감 분류</label>
+                <select id="cat-item-category" class="input-sm">
+                  <option value="all">전체 분류</option>
+                  <option value="consumable">소모품</option>
+                  <option value="equipment">장비</option>
+                  <option value="material">재료</option>
+                  <option value="quest">퀘스트</option>
+                </select>
+                <label for="cat-item-rarity" class="sr-only">도감 등급</label>
+                <select id="cat-item-rarity" class="input-sm">
+                  <option value="all">전체 등급</option>
+                  <option value="common">일반</option>
+                  <option value="rare">희귀</option>
+                  <option value="epic">영웅</option>
+                  <option value="legend">전설</option>
+                </select>
+                <label for="cat-item-qty" class="sr-only">추가 수량</label>
+                <input type="number" id="cat-item-qty" class="input-num" value="1" min="1" step="1">
+              </search>
+              <div tabindex="0" role="region" aria-label="아이템 도감 목록" class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr><th>UID</th><th>아이템명</th><th>등급/분류</th><th>가격</th><th>추가</th></tr>
+                  </thead>
+                  <tbody id="cat-item-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-characters" aria-labelledby="tab-characters" hidden="until-found">
+      <div class="panel-inner">
+        <div class="char-layout">
+          <aside class="card">
+            <div class="card-header"><h2>캐릭터 선택</h2></div>
+            <div class="card-body">
+              <search class="search-bar" aria-label="캐릭터 목록 검색">
+                <label for="char-filter-select" class="sr-only">캐릭터 분류 필터</label>
+                <select id="char-filter-select" class="input-sm">
+                  <option value="party_and_named">주요 인물·동료</option>
+                  <option value="party">파티원</option>
+                  <option value="named">명명 NPC</option>
+                  <option value="all">전체 캐릭터</option>
+                </select>
+                <label for="char-search-input" class="sr-only">캐릭터 이름 검색</label>
+                <input type="search" id="char-search-input" class="input-sm" placeholder="이름 검색" autocorrect="off" autocapitalize="none" spellcheck="false">
+                <span id="char-count-badge" class="badge">0명</span>
+              </search>
+              <div id="char-list-box" class="char-list"></div>
+            </div>
+          </aside>
+
+          <div id="char-detail-pane">
+            <div class="card">
+              <div class="card-header"><h2 id="char-selected-title">선택된 캐릭터 없음</h2></div>
+              <div class="card-body">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="char-surName">성 (surName)</label>
+                    <input type="text" id="char-surName" class="input-sm">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-givenName">이름 (givenName)</label>
+                    <input type="text" id="char-givenName" class="input-sm">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-overrideTitle">칭호 (overrideTitle)</label>
+                    <input type="text" id="char-overrideTitle" class="input-sm">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-level">레벨 (level)</label>
+                    <input type="number" id="char-level" class="input-num" min="1" max="99" step="1">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-exp">경험치 (exp)</label>
+                    <input type="number" id="char-exp" class="input-num" min="0" step="1">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-curHp">현재 HP (curHp)</label>
+                    <input type="number" id="char-curHp" class="input-num" min="0" step="1">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-curEp">현재 기력 (curEp)</label>
+                    <input type="number" id="char-curEp" class="input-num" min="0" step="1">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-egoState">자아 상태 (egoState)</label>
+                    <input type="number" id="char-egoState" class="input-num" step="1">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-valueState">가치관 상태 (valueState)</label>
+                    <input type="text" id="char-valueState" class="input-sm">
+                  </div>
+                  <div class="form-field">
+                    <label for="char-isJoined"><input type="checkbox" id="char-isJoined"> 파티 참여 (isJoined)</label>
+                  </div>
+                </div>
+                <button type="button" id="btn-apply-char-basic" class="btn btn-primary">기본 정보 적용</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h2>능력치 편집</h2></div>
+              <div class="card-body">
+                <div id="char-prop-group-bar" class="prop-group-bar">
+                  <button type="button" class="btn btn-sm" data-prop-group="core">핵심</button>
+                  <button type="button" class="btn btn-sm" data-prop-group="combat">전투</button>
+                  <button type="button" class="btn btn-sm" data-prop-group="weapons">무기자질</button>
+                  <button type="button" class="btn btn-sm" data-prop-group="moral">성향</button>
+                  <button type="button" class="btn btn-sm" data-prop-group="abilities">생활능력 (26종)</button>
+                </div>
+                <div tabindex="0" role="region" aria-label="캐릭터 능력치 목록" class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr><th>능력치명</th><th>키</th><th>기본 (origin)</th><th>추가 (addition)</th><th>합계 (total)</th><th>작업</th></tr>
+                    </thead>
+                    <tbody id="char-props-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h2>무공 편집</h2></div>
+              <div class="card-body">
+                <div class="split-2col">
+                  <div>
+                    <button type="button" id="btn-max-all-kungfu" class="btn btn-gold btn-sm">[보유 무공 전체 만렙]</button>
+                    <div tabindex="0" role="region" aria-label="보유 무공 목록" class="table-wrapper">
+                      <table>
+                        <thead>
+                          <tr><th>무공명</th><th>성급</th><th>레벨</th><th>작업</th></tr>
+                        </thead>
+                        <tbody id="char-kungfu-tbody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div>
+                    <search class="search-bar" aria-label="무공 도감 검색">
+                      <label for="cat-kf-search" class="sr-only">무공 도감 이름 검색</label>
+                      <input type="search" id="cat-kf-search" class="input-sm" placeholder="766종 무공 검색" autocorrect="off" autocapitalize="none" spellcheck="false">
+                      <label for="cat-kf-type" class="sr-only">무공 종류</label>
+                      <select id="cat-kf-type" class="input-sm">
+                        <option value="all">전체 종류</option>
+                        <option value="inner">내공</option>
+                        <option value="sword">검법</option>
+                        <option value="blade">도법</option>
+                        <option value="fist">권법</option>
+                        <option value="light">경공</option>
+                      </select>
+                      <label for="cat-kf-rarity" class="sr-only">무공 등급</label>
+                      <select id="cat-kf-rarity" class="input-sm">
+                        <option value="all">전체 등급</option>
+                        <option value="common">일반</option>
+                        <option value="rare">희귀</option>
+                        <option value="epic">영웅</option>
+                        <option value="legend">전설</option>
+                      </select>
+                      <label for="cat-kf-level" class="sr-only">습득 성급</label>
+                      <input type="number" id="cat-kf-level" class="input-num" value="10" min="1" max="10" step="1">
+                    </search>
+                    <div tabindex="0" role="region" aria-label="무공 도감 목록" class="table-wrapper">
+                      <table>
+                        <thead>
+                          <tr><th>무공명</th><th>종류</th><th>등급</th><th>습득</th></tr>
+                        </thead>
+                        <tbody id="cat-kf-tbody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h2>특성 편집</h2></div>
+              <div class="card-body">
+                <div class="split-2col">
+                  <div>
+                    <h3>보유 특성</h3>
+                    <div id="char-traits-list" class="chip-list"></div>
+                  </div>
+                  <div>
+                    <search class="search-bar" aria-label="특성 도감 검색">
+                      <label for="cat-trait-search" class="sr-only">특성 도감 이름 검색</label>
+                      <input type="search" id="cat-trait-search" class="input-sm" placeholder="508종 특성 검색" autocorrect="off" autocapitalize="none" spellcheck="false">
+                      <label for="cat-trait-rarity" class="sr-only">특성 등급</label>
+                      <select id="cat-trait-rarity" class="input-sm">
+                        <option value="all">전체 등급</option>
+                        <option value="common">일반</option>
+                        <option value="rare">희귀</option>
+                        <option value="epic">영웅</option>
+                        <option value="legend">전설</option>
+                      </select>
+                    </search>
+                    <div tabindex="0" role="region" aria-label="특성 도감 목록" class="table-wrapper">
+                      <table>
+                        <thead>
+                          <tr><th>특성명</th><th>등급</th><th>효과</th><th>추가</th></tr>
+                        </thead>
+                        <tbody id="cat-trait-tbody"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><h2>인연 / 호감도 편집</h2></div>
+              <div class="card-body">
+                <div class="toolbar-group">
+                  <button type="button" id="btn-max-all-relations" class="btn btn-gold btn-sm">[등록 인연 전체 100]</button>
+                </div>
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="new-rel-uid">신규 NPC UID</label>
+                    <input type="text" id="new-rel-uid" class="input-sm" autocorrect="off" autocapitalize="none" spellcheck="false">
+                  </div>
+                  <div class="form-field">
+                    <label for="new-rel-val">호감도 값</label>
+                    <input type="number" id="new-rel-val" class="input-num" value="100" min="0" max="100" step="1">
+                  </div>
+                  <div class="form-field">
+                    <button type="button" id="btn-add-relation" class="btn btn-sm">인연 추가</button>
+                  </div>
+                </div>
+                <div tabindex="0" role="region" aria-label="인연 및 호감도 목록" class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr><th>NPC UID</th><th>이름</th><th>호감도</th><th>작업</th></tr>
+                    </thead>
+                    <tbody id="char-relations-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-world" aria-labelledby="tab-world" hidden="until-found">
+      <div class="panel-inner">
+        <div class="card">
+          <div class="card-header"><h2>문파 우호도</h2></div>
+          <div class="card-body">
+            <search class="search-bar" aria-label="문파 우호도 검색">
+              <label for="faction-search-input" class="sr-only">문파 이름 검색</label>
+              <input type="search" id="faction-search-input" class="input-sm" placeholder="문파명 검색" autocorrect="off" autocapitalize="none" spellcheck="false">
+              <button type="button" id="btn-max-factions" class="btn btn-gold btn-sm">발견 문파 전체 100</button>
+            </search>
+            <div tabindex="0" role="region" aria-label="문파 우호도 목록" class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>문파명</th><th>우호도</th><th>작업</th></tr>
+                </thead>
+                <tbody id="factions-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>가원(장원) 7대 건물</h2></div>
+          <div class="card-body">
+            <p class="helper-text">화청천 · 천공방 · 약선방 · 뒷산 · 오도비 · 진보각 · 정방 — 세이브 ID 기준 매핑</p>
+            <button type="button" id="btn-fief-max-all" class="btn btn-gold btn-sm">전체 5레벨</button>
+            <div id="fief-buildings-grid" class="fief-grid"></div>
+          </div>
+        </div>
+
+        <div class="split-2col">
+          <div class="card">
+            <div class="card-header"><h2>통천탑</h2></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="pagoda-cur-stage">현재 층</label>
+                  <input type="number" id="pagoda-cur-stage" class="input-num" min="0" step="1">
+                </div>
+                <div class="form-field">
+                  <label for="pagoda-cur-score">현재 점수</label>
+                  <input type="number" id="pagoda-cur-score" class="input-num" min="0" step="1">
+                </div>
+                <div class="form-field">
+                  <label for="pagoda-best-stage">최고 층</label>
+                  <input type="number" id="pagoda-best-stage" class="input-num" min="0" step="1">
+                </div>
+                <div class="form-field">
+                  <label for="pagoda-best-score">최고 점수</label>
+                  <input type="number" id="pagoda-best-score" class="input-num" min="0" step="1">
+                </div>
+              </div>
+              <button type="button" id="btn-apply-pagoda" class="btn btn-primary">통천탑 적용</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h2>게임 시간</h2></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="time-year">년</label>
+                  <input type="number" id="time-year" class="input-num" min="1" step="1">
+                </div>
+                <div class="form-field">
+                  <label for="time-month">월</label>
+                  <input type="number" id="time-month" class="input-num" min="1" max="12" step="1">
+                </div>
+                <div class="form-field">
+                  <label for="time-day">일</label>
+                  <input type="number" id="time-day" class="input-num" min="1" max="30" step="1">
+                </div>
+                <div class="form-field">
+                  <label for="time-dhour">시진 (12지지)</label>
+                  <select id="time-dhour" class="input-sm">
+                    <option value="0">0 · 자시(子時)</option>
+                    <option value="1">1 · 축시(丑時)</option>
+                    <option value="2">2 · 인시(寅時)</option>
+                    <option value="3">3 · 묘시(卯時)</option>
+                    <option value="4">4 · 진시(辰時)</option>
+                    <option value="5">5 · 사시(巳時)</option>
+                    <option value="6">6 · 오시(午時)</option>
+                    <option value="7">7 · 미시(未時)</option>
+                    <option value="8">8 · 신시(申時)</option>
+                    <option value="9">9 · 유시(酉時)</option>
+                    <option value="10">10 · 술시(戌時)</option>
+                    <option value="11">11 · 해시(亥時)</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="time-quarter">각 (0~7)</label>
+                  <input type="number" id="time-quarter" class="input-num" min="0" max="7" step="1">
+                </div>
+              </div>
+              <button type="button" id="btn-apply-time" class="btn btn-primary">게임 시간 적용</button>
+              <p class="helper-text">고정밀 필드(QuaterOfDay, simulatedTime.ticks)는 손실 없이 그대로 보존됩니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-reference" aria-labelledby="tab-reference" hidden="until-found">
+      <div class="panel-inner">
+        <div class="card">
+          <div class="card-header"><h2>REA 전투 피해 공식 &amp; 사회적 호감도 임계치</h2></div>
+          <div class="card-body">
+            <div id="rea-reference-cards" class="split-2col"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>6대 경맥 90혈도 사전</h2></div>
+          <div class="card-body">
+            <search class="search-bar" aria-label="혈도 사전 검색">
+              <label for="acupoint-search-input" class="sr-only">혈도 이름 검색</label>
+              <input type="search" id="acupoint-search-input" class="input-sm" placeholder="혈도명 검색" autocorrect="off" autocapitalize="none" spellcheck="false">
+              <label for="acupoint-meridian-select" class="sr-only">경맥 선택</label>
+              <select id="acupoint-meridian-select" class="input-sm">
+                <option value="all">전체 6대 경맥</option>
+                <option value="dong">독맥 (기민·속도)</option>
+                <option value="jing">임맥 (방어·막기)</option>
+                <option value="gang">양유맥 (치명타·공격)</option>
+                <option value="rou">음유맥 (회피·반사)</option>
+                <option value="xu">충맥 (반격·저항)</option>
+                <option value="shi">대맥 (명중·치명피해)</option>
+              </select>
+            </search>
+            <div tabindex="0" role="region" aria-label="혈도 사전 목록" class="table-wrapper">
+              <table>
+                <thead>
+                  <tr><th>혈도명</th><th>경맥</th><th>부위</th><th>효과</th><th>작업</th></tr>
+                </thead>
+                <tbody id="acupoint-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>Raw ES3 JSON 뷰어</h2></div>
+          <div class="card-body">
+            <label for="raw-file-select">파일 선택</label>
+            <select id="raw-file-select" class="input-sm"></select>
+            <button type="button" id="btn-raw-refresh" class="btn btn-sm">새로고침</button>
+            <button type="button" id="btn-raw-copy" class="btn btn-sm">클립보드 복사</button>
+            <button type="button" id="btn-raw-download" class="btn btn-sm">.json 다운로드</button>
+            <label for="raw-json-textarea" class="sr-only">Raw ES3 JSON 원문</label>
+            <textarea id="raw-json-textarea" class="raw-viewer-textarea" readonly autocorrect="off" autocapitalize="none" spellcheck="false"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- BUNDLE_SCRIPTS_START -->
+  <script src="./catalog-data.js"></script>
+  <script src="./es3-codec.js"></script>
+  <script src="./editor-core.js"></script>
+  <script src="./editor-ui.js"></script>
+  <!-- BUNDLE_SCRIPTS_END -->
+</body>
+</html>
